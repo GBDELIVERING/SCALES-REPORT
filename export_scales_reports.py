@@ -11,6 +11,10 @@ from pathlib import Path
 import csv
 import os
 
+# Shared configuration: table names to search in the database
+# Used across multiple scripts for consistency
+DB_TABLE_NAMES = ['TRANSACTIONS', 'TRANS', 'SALES', 'WEIGHING', 'SCALE_DATA', 'ITEM']
+
 
 class ScalesReportExporter:
     """Handles fetching and processing scales transaction data."""
@@ -36,6 +40,8 @@ class ScalesReportExporter:
             return True
         except requests.exceptions.RequestException as e:
             print(f"✗ Could not connect to EasyWebService: {e}")
+            print("  → Ensure the EasyWebService is running at the configured URL")
+            print("  → Will attempt to use local database as fallback")
             return False
     
     def fetch_raw_transaction_data(self, start_date, end_date):
@@ -71,7 +77,7 @@ class ScalesReportExporter:
                 cursor = conn.cursor()
                 
                 # Try to get transaction data from common table names
-                for table_name in ['TRANSACTIONS', 'TRANS', 'SALES', 'WEIGHING', 'SCALE_DATA']:
+                for table_name in DB_TABLE_NAMES:
                     try:
                         cursor.execute(f"SELECT * FROM {table_name}")
                         raw_rows = cursor.fetchall()
@@ -99,6 +105,7 @@ class ScalesReportExporter:
         for i, row in enumerate(raw_rows):
             # Convert row to string for checking
             row_str = str(row) if not isinstance(row, str) else row
+            row_str_stripped = row_str.strip()
             
             # Skip filter/metadata rows - these contain "Filter:" prefix
             # This is the key fix: Row 0 often contains filter metadata like:
@@ -108,7 +115,7 @@ class ScalesReportExporter:
                 continue
             
             # Skip empty rows
-            if not row_str.strip() or row_str.strip() in ['', 'None', 'null']:
+            if not row_str_stripped or row_str_stripped in ['None', 'null']:
                 skipped_count += 1
                 continue
             

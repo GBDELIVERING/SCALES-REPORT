@@ -8,6 +8,9 @@ import sqlite3
 from pathlib import Path
 import requests
 
+# Import shared configuration
+from export_scales_reports import DB_TABLE_NAMES
+
 
 def inspect_raw_data(num_rows=30, service_url="http://localhost:9999"):
     """Inspect raw data from database or service."""
@@ -33,8 +36,8 @@ def inspect_raw_data(num_rows=30, service_url="http://localhost:9999"):
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
             
-            # Try common table names
-            for table_name in ['TRANSACTIONS', 'TRANS', 'SALES', 'WEIGHING', 'SCALE_DATA', 'ITEM']:
+            # Try common table names (using shared configuration)
+            for table_name in DB_TABLE_NAMES:
                 try:
                     cursor.execute(f"SELECT * FROM {table_name} LIMIT {num_rows}")
                     raw_rows = cursor.fetchall()
